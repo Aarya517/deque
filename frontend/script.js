@@ -1,28 +1,51 @@
 let cart = [];
-let scanning = false;
 let walletBalance = 1000;
+let scanning = false;
 
+/* ---------------- STATUS ---------------- */
 function setStatus(msg) {
   document.getElementById("status").innerText = msg;
 }
 
-// Start barcode scan
+/* ---------------- START SCAN ---------------- */
 function startScan() {
   if (scanning) return;
   scanning = true;
 
   setStatus("📷 Scanning barcode...");
-  document.getElementById("scanner").innerHTML = "";
+  const scannerDiv = document.getElementById("scanner");
+
+  /* 🔥 HARD RESET (THIS FIXES EVERYTHING) */
+  try {
+    Quagga.stop();
+    Quagga.offDetected(onDetected);
+  } catch (e) {}
+
+  scannerDiv.innerHTML = "";
 
   Quagga.init({
     inputStream: {
       type: "LiveStream",
-      target: document.querySelector("#scanner"),
-      constraints: { facingMode: "environment" }
+      target: scannerDiv,
+      constraints: {
+        facingMode: "environment",
+        width: { min: 640 },
+        height: { min: 480 }
+      }
     },
-    decoder: { readers: ["ean_reader"] }
+    locator: {
+      patchSize: "medium",
+      halfSample: true
+    },
+    numOfWorkers: 2,
+    frequency: 10,
+    decoder: {
+      readers: ["ean_reader"]
+    },
+    locate: true
   }, err => {
     if (err) {
+      console.error(err);
       setStatus("❌ Camera error");
       scanning = false;
       return;
@@ -33,9 +56,11 @@ function startScan() {
   Quagga.onDetected(onDetected);
 }
 
-// When barcode detected
+/* ---------------- ON DETECT ---------------- */
 function onDetected(result) {
   const barcode = result.codeResult.code;
+
+  console.log("SCANNED BARCODE:", barcode);
 
   Quagga.offDetected(onDetected);
   Quagga.stop();
@@ -46,21 +71,25 @@ function onDetected(result) {
 
   setStatus("✅ Scanned: " + barcode);
 
+  /* 🔗 FETCH PRODUCT FROM DB */
   fetch(`http://localhost:3000/product/${barcode}`)
     .then(res => res.json())
     .then(product => {
       if (!product) {
-        setStatus("❌ Product not found");
+        setStatus("❌ Scanned but product not in database");
         return;
       }
 
       cart.push(product);
       updateCart();
       setStatus(`🛒 Added ${product.name} (₹${product.price})`);
+    })
+    .catch(() => {
+      setStatus("❌ Backend not reachable");
     });
 }
 
-// Update cart UI
+/* ---------------- CART ---------------- */
 function updateCart() {
   const list = document.getElementById("cart-items");
   const totalEl = document.getElementById("total");
@@ -76,7 +105,7 @@ function updateCart() {
   totalEl.innerText = total;
 }
 
-// Cashless wallet payment
+/* ---------------- WALLET PAYMENT ---------------- */
 function payNow() {
   if (cart.length === 0) {
     alert("Cart is empty");
@@ -93,16 +122,16 @@ function payNow() {
   walletBalance -= total;
   document.getElementById("balance").innerText = walletBalance;
 
-  setStatus("💰 Payment successful via Cashless Wallet");
+  setStatus("💰 Payment successful (Cashless Wallet)");
   generateQR(total);
 }
 
-// Generate QR after payment
+/* ---------------- QR ---------------- */
 function generateQR(totalAmount) {
   const bill = {
     items: cart,
     total: totalAmount,
-    payment_mode: "CASHLESS_TOKEN",
+    payment: "CASHLESS_TOKEN",
     remaining_balance: walletBalance,
     time: new Date().toISOString()
   };
