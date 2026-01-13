@@ -1,21 +1,41 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8" />
   <title>Smart Checkout</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-<h2>Smart Shopping</h2>
+<header>
+  <h1>🛒 Smart Checkout</h1>
+</header>
 
-<button onclick="startScan()">Scan Product</button>
-<div id="cart"></div>
+<div class="container">
 
-<button onclick="pay()">Pay Now</button>
+  <!-- LEFT: SCANNER -->
+  <div class="scanner-section">
+    <h2>Scan Product</h2>
+    <div id="scanner"></div>
+    <button onclick="startScan()">Start Scanning</button>
+  </div>
+
+  <!-- RIGHT: CART -->
+  <div class="cart-section">
+    <h2>🧺 Cart</h2>
+    <ul id="cart-items"></ul>
+    <h3>Total: ₹<span id="total">0</span></h3>
+    <button class="pay-btn" onclick="pay()">Pay Now</button>
+  </div>
+
+</div>
+
 <div id="qr"></div>
 
+<!-- Libraries -->
 <script src="https://unpkg.com/quagga/dist/quagga.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
-<script src="script.js"></script>
 
+<script src="script.js"></script>
 </body>
 </html>
