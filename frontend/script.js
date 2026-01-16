@@ -5,32 +5,39 @@ function startScan() {
   if (scanning) return;
   scanning = true;
 
-  Quagga.init({
-    inputStream: {
-      name: "Live",
-      type: "LiveStream",
-      target: document.querySelector("#scanner"),
-      constraints: {
-        facingMode: "environment"
-      }
+  Quagga.offDetected(onDetected);
+  Quagga.init(
+    {
+      inputStream: {
+        name: "Live",
+        type: "LiveStream",
+        target: document.querySelector("#scanner"),
+        constraints: {
+          facingMode: "environment",
+        },
+      },
+      decoder: {
+        readers: ["ean_reader", "code_128_reader"],
+      },
     },
-    decoder: {
-      readers: ["ean_reader", "code_128_reader"]
+    (err) => {
+      if (err) {
+        console.error(err);
+        scanning = false;
+        return;
+      }
+      Quagga.start();
+      Quagga.onDetected(onDetected);
     }
-  }, err => {
-    if (err) {
-      console.error(err);
-      scanning = false;
-      return;
-    }
-    Quagga.start();
-  });
+  );
 
   Quagga.onDetected(onDetected);
 }
 
 function onDetected(data) {
   const barcode = data.codeResult.code;
+  console.log("Scanned:", barcode);
+
   Quagga.stop();
   scanning = false;
 
@@ -38,11 +45,14 @@ function onDetected(data) {
     .then(res => res.json())
     .then(product => {
       if (!product) {
-        alert("Product not found");
+        alert("Product not found for barcode: " + barcode);
         return;
       }
       cart.push(product);
       updateCart();
+    })
+    .catch(err => {
+      console.error("Fetch error:", err);
     });
 }
 
@@ -74,10 +84,10 @@ function pay() {
   fetch("http://localhost:3000/create-order", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ cart })
+    body: JSON.stringify({ cart }),
   })
-    .then(res => res.json())
-    .then(order => {
+    .then((res) => res.json())
+    .then((order) => {
       const options = {
         key: "rzp_test_XXXXXXXX",
         amount: order.amount,
@@ -85,7 +95,7 @@ function pay() {
         order_id: order.id,
         handler: function (response) {
           showQR(order.id);
-        }
+        },
       };
       new Razorpay(options).open();
     });
@@ -96,6 +106,6 @@ function showQR(orderId) {
   new QRCode(document.getElementById("qr"), {
     text: `ORDER:${orderId}`,
     width: 200,
-    height: 200
+    height: 200,
   });
 }
