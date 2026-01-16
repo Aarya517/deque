@@ -27,13 +27,14 @@ function startScan() {
     inputStream: {
       type: "LiveStream",
       target: scanner,
-      constraints: { facingMode: "environment" }
+      constraints: { facingMode: "user" }
     },
     decoder: { readers: ["ean_reader"] },
     locate: true
   }, err => {
     if (err) {
-      setStatus("❌ Camera error");
+      console.error("Camera error:", err);
+      setStatus("❌ Camera error: " + (err.message || "Permission denied or camera unavailable"));
       scanning = false;
       return;
     }
