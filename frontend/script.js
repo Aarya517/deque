@@ -1,11 +1,7 @@
 let cart = [];
+let userCredits = 50000; // Initial credits
 let scanning = false;
-let lastScannedCode = null;
-
-/* ================= CREDIT SYSTEM ================= */
-
-let credits = 2000; // initial credits
-const CREDIT_SYMBOL = "CR";
+let lastScannedCode = null; // 🔥 IMPORTANT
 
 function setStatus(msg) {
   document.getElementById("status").innerText = msg;
@@ -127,7 +123,7 @@ function onDetected(result) {
 
   setStatus("✅ Scanned: " + barcode);
 
-  fetch(`http://localhost:5501/product/${barcode}`)
+  fetch(`http://localhost:3000/product/${barcode}`)
     .then((res) => res.json())
     .then((product) => {
       if (!product) {
@@ -176,49 +172,46 @@ function payNow() {
 
   const total = cart.reduce((sum, item) => sum + item.price, 0);
 
-  if (credits < total) {
-    showRefillOption(total);
+  if (userCredits < total) {
+    const refill = confirm(
+      "❌ Insufficient credits.\nDo you want to refill credits?"
+    );
+
+    if (refill) {
+      userCredits += 500;
+      document.getElementById("credits").innerText = userCredits;
+      alert("✅ 500 credits added. Please click Pay Now again.");
+    }
     return;
   }
 
-  credits -= total;
-  updateCreditsUI();
+  userCredits -= total;
+  document.getElementById("credits").innerText = userCredits;
 
   generateQR(cart, total);
 
   cart = [];
   updateCart();
-  setStatus("💳 Payment successful using credits");
-  onPaymentSuccess();
+
   showScreen("pass");
+
+  document.getElementById("payment-status").textContent =
+    "✔ PAYMENT SUCCESSFUL";
+  document.getElementById("payment-status").className = "verified";
+
+  document.getElementById("credit-message").innerText =
+    `Credits deducted: ${total} pts | Remaining credits: ${userCredits} pts`;
+
+  onPaymentSuccess();
+
+  setStatus("💳 Payment completed successfully");
 }
 
-function showRefillOption(requiredAmount) {
-  const refill = confirm(
-    `❌ Insufficient Credits!\n\nRequired: ${requiredAmount} CR\nAvailable: ${credits} CR\n\nRefill credits now?`
-  );
-
-  if (refill) refillCredits();
-}
-
-function refillCredits() {
-  const amount = prompt("Enter credits to add (e.g. 500, 1000):");
-  const value = parseInt(amount);
-
-  if (isNaN(value) || value <= 0) {
-    alert("❌ Invalid amount");
-    return;
-  }
-
-  credits += value;
-  updateCreditsUI();
-  alert(`✅ ${value} CR added successfully`);
-}
 
 /* ---------- QR ---------- */
 function generateQR(items, total) {
   const qrBox = document.getElementById("qrBox");
-  qrBox.innerHTML = "";
+  qrBox.innerHTML = ""; // clear old QR
 
   new QRCode(qrBox, {
     text: JSON.stringify({
@@ -231,9 +224,3 @@ function generateQR(items, total) {
     height: 200,
   });
 }
-
-function updateCreditsUI() {
-  document.getElementById("balance").innerText = `${credits} ${CREDIT_SYMBOL}`;
-}
-
-updateCreditsUI();
