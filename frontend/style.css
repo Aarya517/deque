@@ -37,6 +37,16 @@ body {
   gap: 18px;
 }
 
+/* STATUS BOX */
+.status-box {
+  padding: 12px 16px;
+  background: #e3f2fd;
+  color: #1976d2;
+  border-radius: 12px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+}
 
 /* SCANNER CARD */
 .scanner-card {
