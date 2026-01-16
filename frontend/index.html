@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Deque – Smart Checkout</title>
+    <title>Deque - Smart Checkout</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -14,7 +14,8 @@
     <div class="app-container">
       <!-- ========== SCAN SCREEN ========== -->
       <section class="screen active" id="scan-screen">
-        <div id="status">Ready to scan</div>
+        <div class="status-box" id="status">Ready to scan</div>
+
         <div class="scanner-card">
           <div id="scanner"></div>
           <div class="scan-line"></div>
@@ -27,6 +28,11 @@
       <!-- ========== CART SCREEN ========== -->
       <section class="screen" id="cart-screen">
         <h2>My Cart</h2>
+
+        <div class="wallet-box">
+          Available Credits:
+          <strong><span id="credits">50000</span> pts</strong>
+        </div>
 
         <ul id="cart-items" class="cart-list"></ul>
 
@@ -41,13 +47,15 @@
 
       <!-- ========== PASS / QR SCREEN ========== -->
       <section class="screen" id="pass-screen">
+        <p id="credit-message" class="hint"></p>
+
         <!-- STATUS -->
         <div id="payment-status" class="pending">⏳ PAYMENT PENDING</div>
 
         <h2>Digital Receipt</h2>
         <p class="hint">Present valid QR at exit gate</p>
+        <div id="qrBox"></div>
 
-        <!-- QR STACK -->
         <div id="qr-stack"></div>
       </section>
     </div>
@@ -80,36 +88,28 @@
       let QR_EXPIRY_TIME = 120; // seconds
 
       function onPaymentSuccess() {
-        // Change status
+        // Status update
         const status = document.getElementById("payment-status");
         status.textContent = "✔ PAYMENT VERIFIED";
         status.className = "verified";
 
-        // QR card
+        // Create QR card
         const qrCard = document.createElement("div");
         qrCard.className = "qr-card";
 
-        // Placeholder for EXISTING QR
-        const qrDiv = document.createElement("div");
-        qrCard.appendChild(qrDiv);
+        // 🔥 MOVE QR FROM qrBox
+        const qrBox = document.getElementById("qrBox");
+        qrCard.appendChild(qrBox);
 
-        // Timer text
+        // Timer label
         const timer = document.createElement("div");
         timer.className = "qr-timer";
         qrCard.appendChild(timer);
 
-        // Add newest QR on top
+        // Show on pass screen
         document.getElementById("qr-stack").prepend(qrCard);
 
-        /*
-      IMPORTANT:
-      Your backend already generates QR inside #qr
-      We ONLY move that generated QR here
-    */
-        const backendQR = document.getElementById("qr");
-        if (backendQR) backendQR.replaceWith(qrDiv);
-
-        // Start expiry countdown
+        // Start timer
         startExpiryTimer(qrCard, timer, QR_EXPIRY_TIME);
       }
 
@@ -117,7 +117,7 @@
         const interval = setInterval(() => {
           if (timeLeft <= 0) {
             clearInterval(interval);
-            label.textContent = "Expired – Invalid for RFID";
+            label.textContent = "Expired - Invalid for RFID";
             card.classList.add("expired");
             return;
           }
