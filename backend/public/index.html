@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Deque - Smart Checkout</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="logo">⭕ Deque</div>
+    </header>
+
+    <!-- MAIN APP -->
+    <div class="app-container">
+      <!-- ========== SCAN SCREEN ========== -->
+      <section class="screen active" id="scan-screen">
+        <div class="status-box" id="status">Ready to scan</div>
+
+        <div class="scanner-card">
+          <div id="scanner"></div>
+          <div class="scan-line"></div>
+          <span class="live-dot">● LIVE SCANNER</span>
+        </div>
+
+        <button class="primary-btn" onclick="startScan()">Scan Barcode</button>
+      </section>
+
+      <!-- ========== CART SCREEN ========== -->
+      <section class="screen" id="cart-screen">
+        <h2>My Cart</h2>
+
+        <div class="wallet-box">
+          Available Credits:
+          <strong><span id="credits">1000</span> pts</strong>
+        </div>
+
+        <div class="wallet-box">
+          Available Credits:
+          <strong><span id="credits">1000</span> pts</strong>
+        </div>
+
+        <ul id="cart-items" class="cart-list"></ul>
+
+        <div class="price-box">
+          <p>Subtotal <span id="subtotal">₹0</span></p>
+          <p>Tax (8%) <span id="tax">₹0</span></p>
+          <h3>Total <span id="total">₹0</span></h3>
+        </div>
+
+        <button class="primary-btn dark" onclick="payNow()">Pay Now</button>
+      </section>
+
+      <!-- ========== PASS / QR SCREEN ========== -->
+      <section class="screen" id="pass-screen">
+        <p id="credit-message" class="hint"></p>
+
+        <!-- STATUS -->
+        <div id="payment-status" class="pending">⏳ PAYMENT PENDING</div>
+
+        <h2>Digital Receipt</h2>
+        <p class="hint">Present valid QR at exit gate</p>
+        <div id="qrBox"></div>
+
+        <div id="qr-stack"></div>
+      </section>
+    </div>
+
+    <!-- BOTTOM NAV -->
+    <nav class="bottom-nav">
+      <button onclick="showScreen('scan')">Scan</button>
+      <button onclick="showScreen('cart')">Cart</button>
+      <button onclick="showScreen('pass')">Pass</button>
+    </nav>
+
+    <!-- Libraries -->
+    <script src="https://unpkg.com/quagga/dist/quagga.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
+
+    <script src="script.js"></script>
+
+    <!-- UI-only screen switch -->
+    <script>
+      function showScreen(name) {
+        document
+          .querySelectorAll(".screen")
+          .forEach((s) => s.classList.remove("active"));
+        document.getElementById(name + "-screen").classList.add("active");
+      }
+    </script>
+
+    <!-- PAYMENT + QR UI LOGIC (ADD THIS BELOW) -->
+    <script>
+      let QR_EXPIRY_TIME = 600; // seconds
+
+      function onPaymentSuccess() {
+        // Status update
+        const status = document.getElementById("payment-status");
+        status.textContent = "✔ PAYMENT VERIFIED";
+        status.className = "verified";
+
+        // Create QR card
+        const qrCard = document.createElement("div");
+        qrCard.className = "qr-card";
+
+        // 🔥 MOVE QR FROM qrBox
+        const qrBox = document.getElementById("qrBox");
+        qrCard.appendChild(qrBox);
+
+        // Timer label
+        const timer = document.createElement("div");
+        timer.className = "qr-timer";
+        qrCard.appendChild(timer);
+
+        // Show on pass screen
+        document.getElementById("qr-stack").prepend(qrCard);
+
+        // Start timer
+        startExpiryTimer(qrCard, timer, QR_EXPIRY_TIME);
+      }
+
+      function startExpiryTimer(card, label, timeLeft) {
+        const interval = setInterval(() => {
+          if (timeLeft <= 0) {
+            clearInterval(interval);
+            label.textContent = "Expired - Invalid for RFID";
+            card.classList.add("expired");
+            return;
+          }
+
+          const min = Math.floor(timeLeft / 60);
+          const sec = timeLeft % 60;
+          label.textContent = `Time left: ${min}:${sec
+            .toString()
+            .padStart(2, "0")}`;
+          timeLeft--;
+        }, 1000);
+      }
+    </script>
+  </body>
+</html>
